@@ -1,0 +1,3 @@
+[submodule "modules/parquet"]
+	path = modules/parquet
+	url = https://github.com/IlleNilsson/xmip-core-archive-parquet.git
