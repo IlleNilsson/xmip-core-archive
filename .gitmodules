@@ -1,3 +1,30 @@
 [submodule "modules/parquet"]
 	path = parquet
 	url = https://github.com/IlleNilsson/xmip-core-archive-parquet.git
+[submodule "xmip-core-archive-sqlite"]
+	path = sqlite
+	url = https://github.com/IlleNilsson/xmip-core-archive-sqlite.git
+[submodule "xmip-core-archive-mssql"]
+	path = mssql
+	url = https://github.com/IlleNilsson/xmip-core-archive-mssql.git
+[submodule "xmip-core-archive-mysql"]
+	path = mysql
+	url = https://github.com/IlleNilsson/xmip-core-archive-mysql.git
+[submodule "xmip-core-archive-postgresql"]
+	path = postgresql
+	url = https://github.com/IlleNilsson/xmip-core-archive-postgresql.git
+[submodule "xmip-core-archive-sql"]
+	path = sql
+	url = https://github.com/IlleNilsson/xmip-core-archive-sql.git
+[submodule "xmip-core-archive-file"]
+	path = file
+	url = https://github.com/IlleNilsson/xmip-core-archive-file.git
+[submodule "xmip-core-archive-s3"]
+	path = s3
+	url = https://github.com/IlleNilsson/xmip-core-archive-s3.git
+[submodule "xmip-core-archive-azure-blob"]
+	path = azure-blob
+	url = https://github.com/IlleNilsson/xmip-core-archive-azure-blob.git
+[submodule "xmip-core-archive-gcs"]
+	path = gcs
+	url = https://github.com/IlleNilsson/xmip-core-archive-gcs.git
