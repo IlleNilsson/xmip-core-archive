@@ -7,4 +7,23 @@ version = "0.1.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/IlleNilsson/xmip-core-archive"
-description = "Archival contracts for retained Xmip data."
+description = "Archival contracts for retained Xmip data, and what every archive technology shares: the item, the receipt, the metadata text, the timestamp, the layout and the checksum."
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# The one checksum a receipt carries. Here rather than in each technology so
+# five crates do not each depend on it for one function (ADR-0044).
+sha2 = "0.10"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+too_many_lines = "warn"
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+unwrap_used = "warn"
+expect_used = "allow"
