@@ -10,7 +10,8 @@ repository = "https://github.com/IlleNilsson/xmip-core-archive"
 description = "Archival contracts for retained Xmip data, and what every archive technology shares: the item, the receipt, the metadata text, the timestamp, the layout and the checksum."
 
 [lib]
-path = "src/lib.rs"
+# A host crate: the technologies mount beside this source (ADR-0049).
+path = ".src/lib.rs"
 
 [dependencies]
 # The one checksum a receipt carries. Here rather than in each technology so
