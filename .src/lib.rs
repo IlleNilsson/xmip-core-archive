@@ -13,11 +13,17 @@
 //! the four fields. What they hold in common lives here rather than in ten
 //! copies (ADR-0044): `metadata` is the pairs as one text, `timestamp` is
 //! when an item was archived, `layout` is where a name-keyed store puts
-//! it, `checksum` is what a receipt carries.
+//! it, `checksum` is what a receipt carries, `row` is the part of a SQL
+//! row every server shares, `location` reads a receipt back, and
+//! `fixture`, in tests only, is the item every technology's test archives.
 
 pub mod checksum;
+#[cfg(any(test, feature = "test-support"))]
+pub mod fixture;
 pub mod layout;
+pub mod location;
 pub mod metadata;
+pub mod row;
 pub mod timestamp;
 
 use std::error::Error;
@@ -45,6 +51,18 @@ pub struct ArchiveReceipt {
 #[derive(Debug)]
 pub struct ArchiveError {
     pub message: String,
+}
+
+impl ArchiveError {
+    /// An error saying what `cause` says: an I/O error, a transport's, a
+    /// `String` that would not be UTF-8. Every technology wrote this three-
+    /// line function for itself until 2026-09-14 (ADR-0044); a blanket
+    /// `From` cannot take its place, because the error is itself `Display`.
+    pub fn caused_by(cause: impl fmt::Display) -> Self {
+        Self {
+            message: cause.to_string(),
+        }
+    }
 }
 
 impl fmt::Display for ArchiveError {
