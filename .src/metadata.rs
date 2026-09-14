@@ -6,8 +6,15 @@
 //! record separator between pairs, unit separator between key and value.
 //! The two control characters are what the separators were made for and
 //! appear in no key or value an integration writes. One encoding across
-//! every technology means a Parquet file, a `SQLite` row and an S3 object
-//! read the same to an operator.
+//! the column-and-object technologies — parquet, sqlite, sql, postgresql,
+//! mssql, mysql, s3, azure-blob, gcs — means a Parquet file, a `SQLite`
+//! row and an S3 object read the same to an operator.
+//!
+//! The file archive is the one exception, on purpose: its `.meta` sidecar
+//! is TOML an operator reads in any editor, and it carries the original
+//! `data_type` and `identifier` beside the pairs because the file name
+//! they became is sanitized and cannot give them back. That sidecar lives
+//! with the file technology, not here.
 
 /// Between pairs.
 pub const PAIR: char = '\u{1e}';

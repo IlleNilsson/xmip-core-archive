@@ -18,6 +18,12 @@ path = ".src/lib.rs"
 # five crates do not each depend on it for one function (ADR-0044).
 sha2 = "0.10"
 
+[features]
+# The item and the timeout a technology's tests archive with, from the
+# capability's `fixture` module. A technology enables it from its
+# dev-dependencies only, so the fixtures are never in a production build.
+test-support = []
+
 [lints.rust]
 unsafe_code = "forbid"
 

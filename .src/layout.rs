@@ -6,10 +6,12 @@
 //! identifier like `poison-json#3/../x` is a safe name and no traversal
 //! survives. And how are the bytes and the metadata keyed beside each
 //! other — `<prefix>/<data_type>/<identifier>` for the bytes and the same
-//! key with `.meta` for the pairs, so an operator listing a prefix sees the
-//! archive laid out by type and can open either object with any tool. The
-//! data type is made slash-free in a key so it splits back into its two
-//! parts; the identifier is kept as it is.
+//! key with `.meta` for the metadata, so an operator listing a prefix sees
+//! the archive laid out by type and can open either object with any tool.
+//! What the `.meta` object holds is the technology's: the `metadata` text
+//! for a bucket, a TOML sidecar for the file archive. The data type is made
+//! slash-free in a key so it splits back into its two parts; the identifier
+//! is kept as it is.
 
 /// What follows an item's key to name the object holding its metadata.
 pub const META_SUFFIX: &str = ".meta";
