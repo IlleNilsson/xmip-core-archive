@@ -93,6 +93,9 @@ mod tests {
     }
 
     #[test]
+    // The number is an epoch second count, and only reads as a moment in
+    // seconds; from_hours would hide which moment it is.
+    #[allow(clippy::duration_suboptimal_units)]
     fn a_leap_day_is_a_real_day() {
         let at = UNIX_EPOCH + Duration::from_secs(1_709_164_800);
         assert_eq!(rfc3339_utc(at), "2024-02-29T00:00:00Z");
