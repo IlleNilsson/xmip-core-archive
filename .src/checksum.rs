@@ -4,19 +4,13 @@
 //! puts it in the receipt, and a restore refuses bytes that no longer match
 //! it. A database store answers `None`; its row id is its integrity.
 
-use std::fmt::Write as _;
-
+use codec::hex;
 use sha2::{Digest, Sha256};
 
 /// SHA-256 of `bytes`, sixty-four lower-case hex digits.
 #[must_use]
 pub fn sha256_hex(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let mut out = String::with_capacity(64);
-    for byte in digest {
-        let _ = write!(out, "{byte:02x}");
-    }
-    out
+    hex::encode(&Sha256::digest(bytes))
 }
 
 #[cfg(test)]
