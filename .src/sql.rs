@@ -3,18 +3,21 @@
 //!
 //! One item is one row with the four columns every archive technology
 //! carries — `data_type`, `identifier`, `bytes`, `metadata` — and
-//! `archived_at`, when it was handed over. The table is the operator's to
-//! create. An archive never deletes (ADR-0040): this one inserts and
-//! selects, nothing else. The receipt is
+//! `archived_at`, when it was handed over. On a server the table is the
+//! operator's to create; a file-based engine creates its own
+//! ([`Dialect::prepare`]). An archive never deletes (ADR-0040): this one
+//! inserts and selects, nothing else. The receipt is
 //! `<scheme>://<server>/<database>/<table>?id=<n>`, and restoring reads the
-//! table and the id from it on the store's own connection.
+//! table and the id from it on the store's own connection, refusing a
+//! receipt of another server or database.
 //!
 //! `PostgreSQL`, SQL Server and `MySQL` each carried the store, the row, the
 //! SELECT and the receipt until 2026-09-14, and the store until 2026-09-24;
-//! all of it is here now (ADR-0044). What stays in the technology is the
-//! [`Dialect`]: how an identifier and a literal are quoted, how the bytes go
-//! in and come back, how a new row's id is asked for, the moment's form,
-//! and the connection, which is the server's transport technology.
+//! `SQLite` carried all of it again until the same day. All of it is here
+//! now (ADR-0044). What stays in the technology is the [`Dialect`]: how an
+//! identifier and a literal are quoted, how the bytes go in and come back,
+//! how a new row's id is asked for, the moment's form, and the connection —
+//! the server's transport technology, or the engine a file is opened with.
 
 use std::marker::PhantomData;
 use std::time::Duration;
@@ -33,7 +36,8 @@ pub type Row = Vec<Option<String>>;
 /// Where a store connects and who it logs in as.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Server {
-    /// `host:port`.
+    /// `host:port`, or for a file-based engine the file as the path of a
+    /// URI (`net::uri`): `/C:/xmip/archive.sqlite`.
     pub address: String,
     pub database: String,
     pub user: String,
@@ -62,6 +66,17 @@ pub trait Dialect {
 
     /// An open connection to the server.
     type Connection;
+
+    /// Make `table` ready on a fresh connection, before any statement:
+    /// nothing for a server, whose table is the operator's to create; a
+    /// file-based engine creates it where it is not there.
+    ///
+    /// # Errors
+    /// Where the engine refused.
+    fn prepare(connection: &mut Self::Connection, table: &str) -> Result<(), ArchiveError> {
+        let _ = (connection, table);
+        Ok(())
+    }
 
     /// One identifier — a schema, a table — quoted as this server reads it.
     fn quote_identifier(name: &str) -> String;
@@ -226,14 +241,19 @@ impl<D: Dialect> SqlArchive<D> {
         self
     }
 
-    fn location(&self, id: &str) -> String {
+    /// What every receipt of this store shares, up to its table:
+    /// `<scheme>://<server>/<database>/`.
+    fn prefix(&self) -> String {
         format!(
-            "{}://{}/{}/{}?id={id}",
+            "{}://{}/{}/",
             D::SCHEME,
             self.server.address,
-            self.server.database,
-            self.table
+            self.server.database
         )
+    }
+
+    fn location(&self, id: &str) -> String {
+        format!("{}{}?id={id}", self.prefix(), self.table)
     }
 }
 
@@ -241,6 +261,7 @@ impl<D: Dialect> ArchiveStore for SqlArchive<D> {
     fn archive(&self, item: ArchiveItem) -> Result<ArchiveReceipt, ArchiveError> {
         let sql = insert_sql::<D>(&self.table, &item, &D::archived_at());
         let mut connection = D::connect(&self.server)?;
+        D::prepare(&mut connection, &self.table)?;
         let id = D::insert(&mut connection, &sql)?;
         D::close(connection)?;
         let id = id.ok_or_else(|| ArchiveError {
@@ -254,7 +275,13 @@ impl<D: Dialect> ArchiveStore for SqlArchive<D> {
 
     fn restore(&self, receipt: &ArchiveReceipt) -> Result<ArchiveItem, ArchiveError> {
         let (table, id) = location::table_row(D::SCHEME, &receipt.location)?;
+        if !receipt.location.starts_with(&self.prefix()) {
+            return Err(ArchiveError {
+                message: format!("{} is not a receipt of {}", receipt.location, self.prefix()),
+            });
+        }
         let mut connection = D::connect(&self.server)?;
+        D::prepare(&mut connection, table)?;
         let rows = D::select(&mut connection, &select_sql::<D>(table, id))?;
         D::close(connection)?;
         let first = rows.first().ok_or_else(|| ArchiveError {
@@ -382,6 +409,17 @@ mod tests {
         };
         let failure = store.restore(&receipt).expect_err("no row");
         assert_eq!(failure.message, "no row at plain://h/d/gone?id=1");
+        for location in ["plain://other/d/archive?id=1", "plain://h/e/archive?id=1"] {
+            let receipt = ArchiveReceipt {
+                location: location.to_string(),
+                checksum: None,
+            };
+            let failure = store.restore(&receipt).expect_err(location);
+            assert_eq!(
+                failure.message,
+                format!("{location} is not a receipt of plain://h/d/")
+            );
+        }
     }
 
     #[test]

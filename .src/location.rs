@@ -14,7 +14,9 @@
 use crate::ArchiveError;
 
 /// The table and id a row receipt names:
-/// `<scheme>://<server>/<database>/<table>?id=<n>`.
+/// `<scheme>://<server>/<database>/<table>?id=<n>`, read from the right, so
+/// a server that is a file — `sqlite:///C:/x/archive.sqlite/main/archive` —
+/// keeps its slashes.
 ///
 /// # Errors
 /// The location does not have that shape, or the id is not a number.
@@ -31,8 +33,8 @@ pub fn table_row<'a>(scheme: &str, location: &'a str) -> Result<(&'a str, u64), 
         .strip_prefix("id=")
         .and_then(|digits| digits.parse().ok())
         .ok_or_else(malformed)?;
-    match path.splitn(3, '/').collect::<Vec<_>>().as_slice() {
-        [_, _, table] if !table.is_empty() => Ok((table, id)),
+    match path.rsplitn(3, '/').collect::<Vec<_>>().as_slice() {
+        [table, database, _] if !table.is_empty() && !database.is_empty() => Ok((table, id)),
         _ => Err(malformed()),
     }
 }
@@ -65,6 +67,10 @@ mod tests {
         assert_eq!(
             table_row("mssql", "mssql://h/db/Archive?id=41").expect("row"),
             ("Archive", 41)
+        );
+        assert_eq!(
+            table_row("sqlite", "sqlite:///C:/x/archive.sqlite/main/archive?id=3").expect("row"),
+            ("archive", 3)
         );
         for location in [
             "s3://bucket/key",
