@@ -13,9 +13,10 @@
 //! the four fields. What they hold in common lives here rather than in ten
 //! copies (ADR-0044): `metadata` is the pairs as one text, `timestamp` is
 //! when an item was archived, `layout` is where a name-keyed store puts
-//! it, `checksum` is what a receipt carries, `row` is the part of a SQL
-//! row every server shares, `location` reads a receipt back, and
-//! `fixture`, in tests only, is the item every technology's test archives.
+//! it, `checksum` is what a receipt carries, `sql` is the one archive in a
+//! SQL server's table — `SqlArchive`, given each server's `Dialect` —
+//! `location` reads a receipt back, and `fixture`, in tests only, is the
+//! item every technology's test archives.
 
 pub mod checksum;
 #[cfg(any(test, feature = "test-support"))]
@@ -23,7 +24,7 @@ pub mod fixture;
 pub mod layout;
 pub mod location;
 pub mod metadata;
-pub mod row;
+pub mod sql;
 pub mod timestamp;
 
 use std::error::Error;

@@ -17,6 +17,9 @@ path = ".src/lib.rs"
 # The one checksum a receipt carries. Here rather than in each technology so
 # five crates do not each depend on it for one function (ADR-0044).
 sha2 = "0.10"
+# The estate's encoding primitives: the civil calendar a receipt's time is
+# written from, and hex for its checksum.
+codec = { package = "xmip-core-library-codec", git = "https://github.com/IlleNilsson/xmip-core-library-codec", branch = "main" }
 
 [features]
 # The item and the timeout a technology's tests archive with, from the
