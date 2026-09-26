@@ -84,8 +84,11 @@ pub trait Dialect {
     fn quote_literal(text: &str) -> String;
     /// The bytes as a literal this server stores in the bytes column.
     fn bytes_literal(bytes: &[u8]) -> String;
-    /// The text the transport answered for the bytes column, as the bytes.
-    fn column_bytes(text: String) -> Vec<u8>;
+    /// The bytes the transport's answer for the bytes column names in
+    /// this server's binary form, or `None` where the answer is not in it:
+    /// the column is written in that form and nothing else is taken for
+    /// bytes (ADR-0038).
+    fn column_bytes(text: &str) -> Option<Vec<u8>>;
     /// The moment, as the `archived_at` column takes it: RFC 3339 in UTC.
     #[must_use]
     fn archived_at() -> String {
@@ -169,7 +172,8 @@ pub fn select_sql<D: Dialect>(table: &str, id: u64) -> String {
 /// One row, the four columns in order, back into an item.
 ///
 /// # Errors
-/// Where a column is missing or NULL.
+/// Where a column is missing or NULL, or the bytes column is not in the
+/// dialect's binary form.
 pub fn item_from_row<D: Dialect>(
     row: &[Option<String>],
     at: &str,
@@ -185,7 +189,9 @@ pub fn item_from_row<D: Dialect>(
     Ok(ArchiveItem {
         data_type: column(0, "data_type")?,
         identifier: column(1, "identifier")?,
-        bytes: D::column_bytes(column(2, "bytes")?),
+        bytes: D::column_bytes(&column(2, "bytes")?).ok_or_else(|| ArchiveError {
+            message: format!("column bytes in {at} is not in {}'s binary form", D::SCHEME),
+        })?,
         metadata: metadata::decode(&column(3, "metadata")?),
     })
 }
@@ -321,8 +327,8 @@ mod tests {
         fn bytes_literal(bytes: &[u8]) -> String {
             format!("'{}'", String::from_utf8_lossy(bytes))
         }
-        fn column_bytes(text: String) -> Vec<u8> {
-            text.into_bytes()
+        fn column_bytes(text: &str) -> Option<Vec<u8>> {
+            Some(text.as_bytes().to_vec())
         }
         fn connect(server: &Server) -> Result<(), ArchiveError> {
             if server.password.as_deref() == Some("wrong") {
