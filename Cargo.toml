@@ -20,6 +20,9 @@ sha2 = "0.11"
 # The estate's encoding primitives: the civil calendar a receipt's time is
 # written from, and hex for its checksum.
 codec = { package = "xmip-core-library-codec", git = "https://github.com/IlleNilsson/xmip-core-library-codec", branch = "main" }
+# SQL: the dialect a SQL technology names, which writes the row's INSERT
+# and SELECT and reads its bytes back (`sql.rs`).
+sql = { package = "xmip-core-library-sql", git = "https://github.com/IlleNilsson/xmip-core-library-sql", branch = "main" }
 
 [features]
 # The item and the timeout a technology's tests archive with, from the

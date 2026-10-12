@@ -1,6 +1,6 @@
 //! When an item was archived, as text: RFC 3339 in UTC for a file, a
 //! script or a `timestamptz` column — `2026-09-09T12:00:00Z` — and the
-//! zone-less `DATETIME` form `MySQL` reads — `2026-09-09 12:00:00`.
+//! zone-less `DATETIME` form `MariaDB` reads — `2026-09-09 12:00:00`.
 //!
 //! Five technologies each carried this until 2026-09-09, when it moved up
 //! to the capability (ADR-0044); the calendar under it is
@@ -18,7 +18,7 @@ pub fn now() -> String {
 
 /// `at` as a `DATETIME` literal in UTC to the second — no `T`, no zone —
 /// because a `DATETIME` keeps no zone and a literal with one is not read
-/// by every `MySQL` and `MariaDB` version. A moment before the epoch is the
+/// by every `MariaDB` version. A moment before the epoch is the
 /// epoch itself.
 #[must_use]
 pub fn datetime_utc(at: SystemTime) -> String {

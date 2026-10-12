@@ -7,9 +7,9 @@
 [submodule "xmip-core-archive-mssql"]
 	path = mssql
 	url = https://github.com/IlleNilsson/xmip-core-archive-mssql.git
-[submodule "xmip-core-archive-mysql"]
-	path = mysql
-	url = https://github.com/IlleNilsson/xmip-core-archive-mysql.git
+[submodule "xmip-core-archive-mariadb"]
+	path = mariadb
+	url = https://github.com/IlleNilsson/xmip-core-archive-mariadb.git
 [submodule "xmip-core-archive-postgresql"]
 	path = postgresql
 	url = https://github.com/IlleNilsson/xmip-core-archive-postgresql.git

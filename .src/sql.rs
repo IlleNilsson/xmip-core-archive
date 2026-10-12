@@ -1,31 +1,37 @@
 //! An archive in a SQL server's table: [`SqlArchive`], one type for every
-//! server, and the [`Dialect`] each server's technology gives it.
+//! server, and the [`Database`] each server's technology gives it.
 //!
 //! One item is one row with the four columns every archive technology
 //! carries — `data_type`, `identifier`, `bytes`, `metadata` — and
 //! `archived_at`, when it was handed over. On a server the table is the
 //! operator's to create; a file-based engine creates its own
-//! ([`Dialect::prepare`]). An archive never deletes (ADR-0040): this one
+//! ([`Database::prepare`]). An archive never deletes (ADR-0040): this one
 //! inserts and selects, nothing else. The receipt is
 //! `<scheme>://<server>/<database>/<table>?id=<n>`, and restoring reads the
 //! table and the id from it on the store's own connection, refusing a
 //! receipt of another server or database.
 //!
-//! `PostgreSQL`, SQL Server and `MySQL` each carried the store, the row, the
+//! `PostgreSQL`, SQL Server and `MariaDB` each carried the store, the row, the
 //! SELECT and the receipt until 2026-09-14, and the store until 2026-09-24;
 //! `SQLite` carried all of it again until the same day. All of it is here
-//! now (ADR-0044). What stays in the technology is the [`Dialect`]: how an
-//! identifier and a literal are quoted, how the bytes go in and come back,
-//! how a new row's id is asked for, the moment's form, and the connection —
-//! the server's transport technology, or the engine a file is opened with.
+//! now (ADR-0044). What stays in the technology is the [`Database`]: the
+//! SQL dialect it speaks (`xmip-core-library-sql`, which quotes an
+//! identifier and a literal, writes the bytes and reads them back, and asks
+//! for a new row's id), the moment's form, and the connection — the
+//! server's transport technology, or the engine a file is opened with.
 
 use std::marker::PhantomData;
 use std::time::Duration;
+
+use sql::Dialect;
 
 use crate::{ArchiveError, ArchiveItem, ArchiveReceipt, ArchiveStore, location, metadata};
 
 /// The table written to unless told otherwise.
 pub const DEFAULT_TABLE: &str = "archive";
+
+/// The column a row's id is in, which a receipt names.
+pub const ID: &str = "id";
 
 /// The columns an INSERT names, in the order it writes the values.
 pub const COLUMNS: &str = "data_type, identifier, bytes, metadata, archived_at";
@@ -47,22 +53,14 @@ pub struct Server {
     pub timeout: Option<Duration>,
 }
 
-/// What one SQL server does its own way. A technology implements it on a
-/// type of its own and hands that type to [`SqlArchive`].
-pub trait Dialect {
-    /// The receipt's scheme: `postgresql`, `mssql`, `mysql`.
+/// What one SQL database does its own way: the dialect it speaks and how
+/// it is reached. A technology implements it on a type of its own and hands
+/// that type to [`SqlArchive`].
+pub trait Database {
+    /// The receipt's scheme: `postgresql`, `mssql`, `mariadb`.
     const SCHEME: &'static str;
-    /// The expression that selects the bytes column: `bytes` where the
-    /// transport answers it in a form [`Dialect::column_bytes`] reads, or a
-    /// spelling-out such as `CONCAT('0x', HEX(bytes))` where the protocol
-    /// would hand a BLOB over raw.
-    const BYTES_EXPRESSION: &'static str = "bytes";
-    /// What an INSERT says between its columns and `VALUES` to answer the
-    /// new row's id: ` OUTPUT INSERTED.id`.
-    const ID_BEFORE_VALUES: &'static str = "";
-    /// What an INSERT says after its values to answer the new row's id:
-    /// ` RETURNING id`.
-    const ID_AFTER_VALUES: &'static str = "";
+    /// The SQL the server speaks.
+    const DIALECT: Dialect;
 
     /// An open connection to the server.
     type Connection;
@@ -78,17 +76,6 @@ pub trait Dialect {
         Ok(())
     }
 
-    /// One identifier — a schema, a table — quoted as this server reads it.
-    fn quote_identifier(name: &str) -> String;
-    /// A text value as this server's string literal.
-    fn quote_literal(text: &str) -> String;
-    /// The bytes as a literal this server stores in the bytes column.
-    fn bytes_literal(bytes: &[u8]) -> String;
-    /// The bytes the transport's answer for the bytes column names in
-    /// this server's binary form, or `None` where the answer is not in it:
-    /// the column is written in that form and nothing else is taken for
-    /// bytes (ADR-0038).
-    fn column_bytes(text: &str) -> Option<Vec<u8>>;
     /// The moment, as the `archived_at` column takes it: RFC 3339 in UTC.
     #[must_use]
     fn archived_at() -> String {
@@ -130,42 +117,33 @@ pub fn first_cell(rows: Vec<Row>) -> Option<String> {
     rows.into_iter().next()?.into_iter().next().flatten()
 }
 
-/// A table name quoted segment by segment, so `audit.archive` stays a table
-/// in a schema and `Archive` keeps its case.
-#[must_use]
-pub fn table_name<D: Dialect>(table: &str) -> String {
-    table
-        .split('.')
-        .map(D::quote_identifier)
-        .collect::<Vec<_>>()
-        .join(".")
-}
-
 /// The statement that stores `item` in `table` at `archived_at`, asking for
 /// the new row's id where the dialect's INSERT can.
 #[must_use]
-pub fn insert_sql<D: Dialect>(table: &str, item: &ArchiveItem, archived_at: &str) -> String {
+pub fn insert_sql<D: Database>(table: &str, item: &ArchiveItem, archived_at: &str) -> String {
+    let dialect = D::DIALECT;
+    let returning = dialect.returning();
     format!(
         "INSERT INTO {} ({COLUMNS}){} VALUES ({}, {}, {}, {}, {}){}",
-        table_name::<D>(table),
-        D::ID_BEFORE_VALUES,
-        D::quote_literal(&item.data_type),
-        D::quote_literal(&item.identifier),
-        D::bytes_literal(&item.bytes),
-        D::quote_literal(&metadata::encode(&item.metadata)),
-        D::quote_literal(archived_at),
-        D::ID_AFTER_VALUES
+        dialect.quote_table(table),
+        returning.before_values(ID),
+        dialect.quote_text(&item.data_type),
+        dialect.quote_text(&item.identifier),
+        dialect.quote_bytes(&item.bytes),
+        dialect.quote_text(&metadata::encode(&item.metadata)),
+        dialect.quote_text(archived_at),
+        returning.after_values(ID)
     )
 }
 
 /// The statement that brings row `id` of `table` back, the four columns in
 /// the order [`item_from_row`] reads them.
 #[must_use]
-pub fn select_sql<D: Dialect>(table: &str, id: u64) -> String {
+pub fn select_sql<D: Database>(table: &str, id: u64) -> String {
     format!(
-        "SELECT data_type, identifier, {}, metadata FROM {} WHERE id = {id}",
-        D::BYTES_EXPRESSION,
-        table_name::<D>(table)
+        "SELECT data_type, identifier, {}, metadata FROM {} WHERE {ID} = {id}",
+        D::DIALECT.binary_column("bytes"),
+        D::DIALECT.quote_table(table)
     )
 }
 
@@ -174,7 +152,7 @@ pub fn select_sql<D: Dialect>(table: &str, id: u64) -> String {
 /// # Errors
 /// Where a column is missing or NULL, or the bytes column is not in the
 /// dialect's binary form.
-pub fn item_from_row<D: Dialect>(
+pub fn item_from_row<D: Database>(
     row: &[Option<String>],
     at: &str,
 ) -> Result<ArchiveItem, ArchiveError> {
@@ -189,22 +167,24 @@ pub fn item_from_row<D: Dialect>(
     Ok(ArchiveItem {
         data_type: column(0, "data_type")?,
         identifier: column(1, "identifier")?,
-        bytes: D::column_bytes(&column(2, "bytes")?).ok_or_else(|| ArchiveError {
-            message: format!("column bytes in {at} is not in {}'s binary form", D::SCHEME),
-        })?,
+        bytes: D::DIALECT
+            .bytes_of(&column(2, "bytes")?)
+            .ok_or_else(|| ArchiveError {
+                message: format!("column bytes in {at} is not in {}'s binary form", D::SCHEME),
+            })?,
         metadata: metadata::decode(&column(3, "metadata")?),
     })
 }
 
 /// An archive that keeps items as rows of one table on one server, the
-/// server's ways its [`Dialect`]'s.
+/// server's ways its [`Database`]'s.
 pub struct SqlArchive<D> {
     server: Server,
     table: String,
     dialect: PhantomData<fn() -> D>,
 }
 
-impl<D: Dialect> SqlArchive<D> {
+impl<D: Database> SqlArchive<D> {
     /// An archive writing to [`DEFAULT_TABLE`] in `database` at `address`,
     /// logging in as `user` with no password.
     #[must_use]
@@ -263,7 +243,7 @@ impl<D: Dialect> SqlArchive<D> {
     }
 }
 
-impl<D: Dialect> ArchiveStore for SqlArchive<D> {
+impl<D: Database> ArchiveStore for SqlArchive<D> {
     fn archive(&self, item: ArchiveItem) -> Result<ArchiveReceipt, ArchiveError> {
         let sql = insert_sql::<D>(&self.table, &item, &D::archived_at());
         let mut connection = D::connect(&self.server)?;
@@ -308,28 +288,15 @@ mod tests {
         static SENT: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     }
 
-    /// A server that quotes with double quotes, answers bytes as text,
-    /// returns id 41 from an INSERT and the fixture row from any SELECT
-    /// but one of table `gone`.
+    /// A server that speaks `PostgreSQL`'s SQL, returns id 41 from an
+    /// INSERT and the fixture row from any SELECT but one of table `gone`.
     struct Plain;
 
-    impl Dialect for Plain {
+    impl Database for Plain {
         const SCHEME: &'static str = "plain";
-        const ID_AFTER_VALUES: &'static str = " RETURNING id";
+        const DIALECT: Dialect = sql::POSTGRESQL;
         type Connection = ();
 
-        fn quote_identifier(name: &str) -> String {
-            format!("\"{name}\"")
-        }
-        fn quote_literal(text: &str) -> String {
-            format!("'{text}'")
-        }
-        fn bytes_literal(bytes: &[u8]) -> String {
-            format!("'{}'", String::from_utf8_lossy(bytes))
-        }
-        fn column_bytes(text: &str) -> Option<Vec<u8>> {
-            Some(text.as_bytes().to_vec())
-        }
         fn connect(server: &Server) -> Result<(), ArchiveError> {
             if server.password.as_deref() == Some("wrong") {
                 return Err(ArchiveError::caused_by("refused"));
@@ -347,7 +314,7 @@ mod tests {
                 vec![vec![
                     Some(held.data_type),
                     Some(held.identifier),
-                    Some(String::from_utf8_lossy(&held.bytes).into_owned()),
+                    Some(format!("\\x{}", codec::hex::encode(&held.bytes))),
                     Some(metadata::encode(&held.metadata)),
                 ]]
             })
@@ -359,15 +326,12 @@ mod tests {
 
     #[test]
     fn the_statements_are_the_dialects_and_the_table_is_quoted_by_segment() {
-        assert_eq!(
-            table_name::<Plain>("audit.archive"),
-            "\"audit\".\"archive\""
-        );
         let sql = insert_sql::<Plain>("Archive", &item("a"), "then");
         assert_eq!(
             sql,
             "INSERT INTO \"Archive\" (data_type, identifier, bytes, metadata, archived_at) \
-             VALUES ('json', 'a', '{\"kept\":true}', 'source\u{1f}playground', 'then') \
+             VALUES ('json', 'a', '\\x7b226b657074223a747275657d', \
+             'source\u{1f}playground', 'then') \
              RETURNING id"
         );
         assert_eq!(
@@ -434,7 +398,7 @@ mod tests {
         let row = vec![
             Some("json".to_string()),
             Some("it's #1".to_string()),
-            Some("plain".to_string()),
+            Some("\\x706c61696e".to_string()),
             Some(metadata::encode(&pairs)),
         ];
         let restored = item_from_row::<Plain>(&row, "here").expect("row");

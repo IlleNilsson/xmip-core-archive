@@ -6,8 +6,9 @@ and the metadata pairs — and answers an `ArchiveReceipt` it can restore the
 item from. The metadata text, the timestamp, the name-keyed layout and the
 receipt checksum live here rather than in ten copies (ADR-0044), and so does
 the one archive in a SQL server's table: `sql::SqlArchive<D>`, the store, the
-row, its INSERT and SELECT and the receipt, given each server's `sql::Dialect`
-— SQL Server's, `MySQL`'s and `PostgreSQL`'s are all their technologies keep.
+row, its INSERT and SELECT and the receipt, given each server's
+`sql::Database` — the SQL dialect it speaks, from `xmip-core-library-sql`,
+and its connection, which are all the technologies keep.
 
 Archiving is the last thing Xmip does with a piece of data: the store keeps
 it, the archive owner decides what becomes of it, Xmip never deletes
