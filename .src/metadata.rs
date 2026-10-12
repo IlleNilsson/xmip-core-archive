@@ -7,7 +7,7 @@
 //! The two control characters are what the separators were made for and
 //! appear in no key or value an integration writes. One encoding across
 //! the column-and-object technologies — parquet, sqlite, sql, postgresql,
-//! mssql, mysql, s3, azure-blob, gcs — means a Parquet file, a `SQLite`
+//! mssql, mariadb, s3, azure-blob, gcs — means a Parquet file, a `SQLite`
 //! row and an S3 object read the same to an operator.
 //!
 //! The file archive is the one exception, on purpose: its `.meta` sidecar

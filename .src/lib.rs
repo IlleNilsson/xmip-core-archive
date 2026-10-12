@@ -8,13 +8,13 @@
 //! thing Xmip does with a piece of data (ADR-0040): the store keeps it, the
 //! archive owner decides what becomes of it, Xmip never deletes.
 //!
-//! The technologies — parquet, sqlite, file, sql, postgresql, mssql, mysql,
+//! The technologies — parquet, sqlite, file, sql, postgresql, mssql, mariadb,
 //! s3, azure-blob, gcs — each decide how a row, a file or an object holds
 //! the four fields. What they hold in common lives here rather than in ten
 //! copies (ADR-0044): `metadata` is the pairs as one text, `timestamp` is
 //! when an item was archived, `layout` is where a name-keyed store puts
 //! it, `checksum` is what a receipt carries, `sql` is the one archive in a
-//! SQL server's table — `SqlArchive`, given each server's `Dialect` —
+//! SQL server's table — `SqlArchive`, given each server's `Database` —
 //! `location` reads a receipt back, and `fixture`, in tests only, is the
 //! item every technology's test archives.
 

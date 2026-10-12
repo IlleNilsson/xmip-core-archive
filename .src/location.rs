@@ -74,16 +74,16 @@ mod tests {
         );
         for location in [
             "s3://bucket/key",
-            "mysql://host/orders/archive",
-            "mysql://host/orders/archive?id=x",
-            "mysql://host/orders?id=1",
-            "mysql://host/orders/?id=1",
-            "mysqlx://host/orders/archive?id=1",
+            "mariadb://host/orders/archive",
+            "mariadb://host/orders/archive?id=x",
+            "mariadb://host/orders?id=1",
+            "mariadb://host/orders/?id=1",
+            "mariadbx://host/orders/archive?id=1",
         ] {
-            let failure = table_row("mysql", location).expect_err(location);
+            let failure = table_row("mariadb", location).expect_err(location);
             assert_eq!(
                 failure.message,
-                format!("{location} is not mysql://server/database/table?id=n")
+                format!("{location} is not mariadb://server/database/table?id=n")
             );
         }
     }
