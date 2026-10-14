@@ -56,7 +56,7 @@ mod tests {
         ];
         assert_eq!(decode(&encode(&pairs)), pairs);
         assert_eq!(encode(&[]), "");
-        assert!(decode("").is_empty());
-        assert!(decode("no-unit-separator").is_empty());
+        assert_eq!(decode(""), [] as [(String, String); 0]);
+        assert_eq!(decode("no-unit-separator"), [] as [(String, String); 0]);
     }
 }
