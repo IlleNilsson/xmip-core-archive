@@ -2,7 +2,7 @@
 //! bucket, a container, a script per type.
 //!
 //! Two questions every such store answers the same way. What does a
-//! segment look like when it becomes a file name — `sanitise`, so an
+//! segment look like when it becomes a file name — `sanitize`, so an
 //! identifier like `poison-json#3/../x` is a safe name and no traversal
 //! survives. And how are the bytes and the metadata keyed beside each
 //! other — `<prefix>/<data_type>/<identifier>` for the bytes and the same
@@ -20,7 +20,7 @@ pub const META_SUFFIX: &str = ".meta";
 /// becomes an underscore, so `poison-json#3/../x` is one valid file name
 /// and no `..` survives.
 #[must_use]
-pub fn sanitise(segment: &str) -> String {
+pub fn sanitize(segment: &str) -> String {
     segment
         .chars()
         .map(|c| {
@@ -69,9 +69,9 @@ mod tests {
 
     #[test]
     fn a_segment_is_made_a_safe_file_name() {
-        assert_eq!(sanitise("poison-json#3/../x"), "poison-json_3____x");
-        assert_eq!(sanitise("plain-1"), "plain-1");
-        assert_eq!(sanitise(""), "");
+        assert_eq!(sanitize("poison-json#3/../x"), "poison-json_3____x");
+        assert_eq!(sanitize("plain-1"), "plain-1");
+        assert_eq!(sanitize(""), "");
     }
 
     #[test]
