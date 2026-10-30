@@ -12,7 +12,7 @@ and its connection, which are all the technologies keep.
 
 Archiving is the last thing Xmip does with a piece of data: the store keeps
 it, the archive owner decides what becomes of it, Xmip never deletes
-(ADR-0040). Archive moves already-retained data on a schedule and no Journey
+(ADR-0040). Archive moves already-retained data on a schedule and no Message
 waits for it, which is why it is an Operation and retention is not
 (`repository-model.md` section 1).
 
