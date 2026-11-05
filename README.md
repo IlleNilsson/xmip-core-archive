@@ -17,5 +17,5 @@ waits for it, which is why it is an Operation and retention is not
 (`repository-model.md` section 1).
 
 Each store is a technology mounted under this repository, riding on the
-transport technology of the same name for its wire client; `architecture.toml`
+transport technology of the same name for its wire client; `architecture.xmip`
 names them.
