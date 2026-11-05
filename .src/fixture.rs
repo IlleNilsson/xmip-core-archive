@@ -19,7 +19,7 @@ pub fn item(id: &str) -> ArchiveItem {
         data_type: "json".to_string(),
         identifier: id.to_string(),
         bytes: b"{\"kept\":true}".to_vec(),
-        metadata: vec![("source".to_string(), "playground".to_string())],
+        metadata: vec![("source".to_string(), "essentials".to_string())],
     }
 }
 

@@ -331,7 +331,7 @@ mod tests {
             sql,
             "INSERT INTO \"Archive\" (data_type, identifier, bytes, metadata, archived_at) \
              VALUES ('json', 'a', '\\x7b226b657074223a747275657d', \
-             'source\u{1f}playground', 'then') \
+             'source\u{1f}essentials', 'then') \
              RETURNING id"
         );
         assert_eq!(
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn a_row_is_the_item_again_and_a_short_or_null_row_is_refused() {
-        let pairs = vec![("source".to_string(), "playground".to_string())];
+        let pairs = vec![("source".to_string(), "essentials".to_string())];
         let row = vec![
             Some("json".to_string()),
             Some("it's #1".to_string()),
