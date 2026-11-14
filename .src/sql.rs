@@ -24,6 +24,7 @@ use std::marker::PhantomData;
 use std::time::Duration;
 
 use sql::Dialect;
+use xcore::{Clock, SystemClock};
 
 use crate::{ArchiveError, ArchiveItem, ArchiveReceipt, ArchiveStore, location, metadata};
 
@@ -85,10 +86,11 @@ pub trait Database {
         Ok(())
     }
 
-    /// The moment, as the `archived_at` column takes it: RFC 3339 in UTC.
+    /// The moment `unix_seconds` after the epoch as the `archived_at`
+    /// column takes it: RFC 3339 in UTC.
     #[must_use]
-    fn archived_at() -> String {
-        crate::timestamp::now()
+    fn archived_at(unix_seconds: i64) -> String {
+        crate::timestamp::rfc3339(unix_seconds)
     }
 
     /// Connect and log in.
@@ -263,7 +265,7 @@ impl<D: Database> ArchiveStore for SqlArchive<D> {
     /// The INSERT written in the dialect the session reads
     /// ([`Database::dialect`]).
     fn archive(&self, item: ArchiveItem) -> Result<ArchiveReceipt, ArchiveError> {
-        let archived_at = D::archived_at();
+        let archived_at = D::archived_at(SystemClock.unix_seconds());
         let mut connection = D::connect(&self.server)?;
         D::prepare(&mut connection, &self.table)?;
         let dialect = D::dialect(&connection);
