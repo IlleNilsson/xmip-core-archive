@@ -5,12 +5,11 @@
 //! it. A database store answers `None`; its row id is its integrity.
 
 use codec::hex;
-use sha2::{Digest, Sha256};
 
 /// SHA-256 of `bytes`, sixty-four lower-case hex digits.
 #[must_use]
 pub fn sha256_hex(bytes: &[u8]) -> String {
-    hex::encode(&Sha256::digest(bytes))
+    hex::encode(&codec::digest::sha256(bytes))
 }
 
 #[cfg(test)]

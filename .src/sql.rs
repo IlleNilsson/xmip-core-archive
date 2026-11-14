@@ -65,6 +65,15 @@ pub trait Database {
     /// An open connection to the server.
     type Connection;
 
+    /// The SQL `connection`'s session reads: [`Database::DIALECT`] unless
+    /// the session says otherwise — `MariaDB`'s under `NO_BACKSLASH_ESCAPES`
+    /// — so the INSERT's literals are written as the server reads them, as
+    /// the SQL transports write theirs (`transport::sql::Wire`, 2026-11-13).
+    fn dialect(connection: &Self::Connection) -> Dialect {
+        let _ = connection;
+        Self::DIALECT
+    }
+
     /// Make `table` ready on a fresh connection, before any statement:
     /// nothing for a server, whose table is the operator's to create; a
     /// file-based engine creates it where it is not there.
@@ -118,10 +127,17 @@ pub fn first_cell(rows: Vec<Row>) -> Option<String> {
 }
 
 /// The statement that stores `item` in `table` at `archived_at`, asking for
-/// the new row's id where the dialect's INSERT can.
+/// the new row's id where the dialect's INSERT can, written in `D`'s
+/// dialect ([`insert_in`]).
 #[must_use]
 pub fn insert_sql<D: Database>(table: &str, item: &ArchiveItem, archived_at: &str) -> String {
-    let dialect = D::DIALECT;
+    insert_in(&D::DIALECT, table, item, archived_at)
+}
+
+/// The statement that stores `item` in `table` at `archived_at`, written in
+/// `dialect`, asking for the new row's id where its INSERT can.
+#[must_use]
+pub fn insert_in(dialect: &Dialect, table: &str, item: &ArchiveItem, archived_at: &str) -> String {
     let returning = dialect.returning();
     format!(
         "INSERT INTO {} ({COLUMNS}){} VALUES ({}, {}, {}, {}, {}){}",
@@ -244,10 +260,14 @@ impl<D: Database> SqlArchive<D> {
 }
 
 impl<D: Database> ArchiveStore for SqlArchive<D> {
+    /// The INSERT written in the dialect the session reads
+    /// ([`Database::dialect`]).
     fn archive(&self, item: ArchiveItem) -> Result<ArchiveReceipt, ArchiveError> {
-        let sql = insert_sql::<D>(&self.table, &item, &D::archived_at());
+        let archived_at = D::archived_at();
         let mut connection = D::connect(&self.server)?;
         D::prepare(&mut connection, &self.table)?;
+        let dialect = D::dialect(&connection);
+        let sql = insert_in(&dialect, &self.table, &item, &archived_at);
         let id = D::insert(&mut connection, &sql)?;
         D::close(connection)?;
         let id = id.ok_or_else(|| ArchiveError {

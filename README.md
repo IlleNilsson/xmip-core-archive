@@ -8,7 +8,9 @@ receipt checksum live here rather than in ten copies (ADR-0044), and so does
 the one archive in a SQL server's table: `sql::SqlArchive<D>`, the store, the
 row, its INSERT and SELECT and the receipt, given each server's
 `sql::Database` — the SQL dialect it speaks, from `xmip-core-library-sql`,
-and its connection, which are all the technologies keep.
+the one its session reads where that may differ (`Database::dialect`:
+`MariaDB` under `NO_BACKSLASH_ESCAPES`), and its connection, which are all
+the technologies keep.
 
 Archiving is the last thing Xmip does with a piece of data: the store keeps
 it, the archive owner decides what becomes of it, Xmip never deletes
