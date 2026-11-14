@@ -4,25 +4,31 @@
 //!
 //! Five technologies each carried this until 2026-09-09, when it moved up
 //! to the capability (ADR-0044); the calendar under it is
-//! `codec::civil`, the estate's one, since 2026-09-24.
-
-use std::time::SystemTime;
+//! `codec::civil`, the estate's one, since 2026-09-24. Each form takes its
+//! moment as seconds since the epoch; [`now`] reads it off the one clock
+//! (`xcore::Clock`).
 
 use codec::civil::CivilTime;
+use xcore::{Clock, SystemClock};
 
 /// Now, in RFC 3339.
 #[must_use]
 pub fn now() -> String {
-    CivilTime::now().rfc3339()
+    rfc3339(SystemClock.unix_seconds())
 }
 
-/// `at` as a `DATETIME` literal in UTC to the second — no `T`, no zone —
-/// because a `DATETIME` keeps no zone and a literal with one is not read
-/// by every `MariaDB` version. A moment before the epoch is the
-/// epoch itself.
+/// The moment `seconds` after the epoch in RFC 3339, in UTC to the second.
 #[must_use]
-pub fn datetime_utc(at: SystemTime) -> String {
-    let moment = CivilTime::from_system_time(at);
+pub fn rfc3339(seconds: i64) -> String {
+    CivilTime::from_unix(seconds).rfc3339()
+}
+
+/// The moment `seconds` after the epoch as a `DATETIME` literal in UTC to
+/// the second — no `T`, no zone — because a `DATETIME` keeps no zone and a
+/// literal with one is not read by every `MariaDB` version.
+#[must_use]
+pub fn datetime_utc(seconds: i64) -> String {
+    let moment = CivilTime::from_unix(seconds);
     format!(
         "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
         moment.year, moment.month, moment.day, moment.hour, moment.minute, moment.second
@@ -32,13 +38,12 @@ pub fn datetime_utc(at: SystemTime) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{Duration, UNIX_EPOCH};
 
     #[test]
     fn a_known_instant_is_a_datetime_literal() {
-        assert_eq!(datetime_utc(UNIX_EPOCH), "1970-01-01 00:00:00");
-        let at = UNIX_EPOCH + Duration::from_secs(1_600_000_000);
-        assert_eq!(datetime_utc(at), "2020-09-13 12:26:40");
+        assert_eq!(datetime_utc(0), "1970-01-01 00:00:00");
+        assert_eq!(datetime_utc(1_600_000_000), "2020-09-13 12:26:40");
+        assert_eq!(rfc3339(1_600_000_000), "2020-09-13T12:26:40Z");
     }
 
     #[test]
