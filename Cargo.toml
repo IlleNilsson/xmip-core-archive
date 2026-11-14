@@ -14,11 +14,9 @@ description = "Archival contracts for retained Xmip data, and what every archive
 path = ".src/lib.rs"
 
 [dependencies]
-# The one checksum a receipt carries. Here rather than in each technology so
-# five crates do not each depend on it for one function (ADR-0044).
-sha2 = "0.11"
 # The estate's encoding primitives: the civil calendar a receipt's time is
-# written from, and hex for its checksum.
+# written from, and the one checksum a receipt carries, SHA-256 in hex,
+# here rather than in each technology (ADR-0044).
 codec = { package = "xmip-core-library-codec", git = "https://github.com/IlleNilsson/xmip-core-library-codec", branch = "main" }
 # SQL: the dialect a SQL technology names, which writes the row's INSERT
 # and SELECT and reads its bytes back (`sql.rs`).
