@@ -387,7 +387,7 @@ mod tests {
         let store = SqlArchive::<Plain>::new("h", "d", "u").with_password("wrong");
         assert!(store.archive(item("x")).is_err());
         let store = SqlArchive::<Plain>::new("h", "d", "u");
-        for location in ["s3://b/k", "plain://h/d/archive", "plain://h/d?id=1"] {
+        for location in ["aws-s3://b/k", "plain://h/d/archive", "plain://h/d?id=1"] {
             let receipt = ArchiveReceipt {
                 location: location.to_string(),
                 checksum: None,

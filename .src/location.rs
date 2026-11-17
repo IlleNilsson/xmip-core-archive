@@ -73,7 +73,7 @@ mod tests {
             ("archive", 3)
         );
         for location in [
-            "s3://bucket/key",
+            "aws-s3://bucket/key",
             "mariadb://host/orders/archive",
             "mariadb://host/orders/archive?id=x",
             "mariadb://host/orders?id=1",
@@ -91,20 +91,23 @@ mod tests {
     #[test]
     fn an_object_receipt_gives_the_bucket_and_the_key() {
         assert_eq!(
-            bucket_key("s3", "s3://orders-archive/retained/json/a#1").expect("object"),
+            bucket_key("aws-s3", "aws-s3://orders-archive/retained/json/a#1").expect("object"),
             ("orders-archive", "retained/json/a#1")
         );
-        assert_eq!(bucket_key("gcs", "gcs://b/k").expect("object"), ("b", "k"));
+        assert_eq!(
+            bucket_key("google-cloud-storage", "google-cloud-storage://b/k").expect("object"),
+            ("b", "k")
+        );
         for location in [
-            "gcs://bucket/key",
-            "s3://bucket",
-            "s3://bucket/",
-            "s3:///key",
+            "google-cloud-storage://bucket/key",
+            "aws-s3://bucket",
+            "aws-s3://bucket/",
+            "aws-s3:///key",
         ] {
-            let failure = bucket_key("s3", location).expect_err(location);
+            let failure = bucket_key("aws-s3", location).expect_err(location);
             assert_eq!(
                 failure.message,
-                format!("{location} is not s3://bucket/key")
+                format!("{location} is not aws-s3://bucket/key")
             );
         }
     }
