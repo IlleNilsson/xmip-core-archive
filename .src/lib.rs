@@ -9,8 +9,8 @@
 //! archive owner decides what becomes of it, Xmip never deletes.
 //!
 //! The technologies — parquet, sqlite, file, sql, postgresql, mssql, mariadb,
-//! s3, azure-blob, gcs — each decide how a row, a file or an object holds
-//! the four fields. What they hold in common lives here rather than in ten
+//! aws-s3, azure-blob, google-cloud-storage — each decide how a row, a file
+//! or an object holds the four fields. What they hold in common lives here rather than in ten
 //! copies (ADR-0044): `metadata` is the pairs as one text, `timestamp` is
 //! when an item was archived, `layout` is where a name-keyed store puts
 //! it, `checksum` is what a receipt carries, `sql` is the one archive in a
