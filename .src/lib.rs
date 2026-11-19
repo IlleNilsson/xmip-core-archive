@@ -11,12 +11,15 @@
 //! The technologies — parquet, sqlite, file, sql, postgresql, mssql, mariadb,
 //! aws-s3, azure-blob, google-cloud-storage — each decide how a row, a file
 //! or an object holds the four fields. What they hold in common lives here rather than in ten
-//! copies (ADR-0044): `metadata` is the pairs as one text, `timestamp` is
-//! when an item was archived, `layout` is where a name-keyed store puts
-//! it, `checksum` is what a receipt carries, `sql` is the one archive in a
-//! SQL server's table — `SqlArchive`, given each server's `Database` —
-//! `location` reads a receipt back, and `fixture`, in tests only, is the
-//! item every technology's test archives.
+//! copies (ADR-0044): `metadata` is the pairs as one text for a column,
+//! `sidecar` the TOML a name-keyed store keeps beside the bytes,
+//! `timestamp` is when an item was archived, `layout` is where a name-keyed
+//! store puts it, `named` is the one rule of such a store — created, never
+//! written over — and `whole` a file created so on a file system,
+//! `checksum` is what a receipt carries, `sql` is the one
+//! archive in a SQL server's table — `SqlArchive`, given each server's
+//! `Database` — `location` reads a receipt back, and `fixture`, in tests
+//! only, is the item every technology's test archives.
 
 pub mod checksum;
 #[cfg(any(test, feature = "test-support"))]
@@ -24,8 +27,11 @@ pub mod fixture;
 pub mod layout;
 pub mod location;
 pub mod metadata;
+pub mod named;
+pub mod sidecar;
 pub mod sql;
 pub mod timestamp;
+pub mod whole;
 
 use std::error::Error;
 use std::fmt;

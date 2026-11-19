@@ -2,20 +2,19 @@
 //!
 //! Every archive technology keeps an item's four fields — `data_type`,
 //! `identifier`, `bytes`, `metadata` — and where the store has one text
-//! column or one object for the metadata, the pairs travel in it like this:
-//! record separator between pairs, unit separator between key and value.
-//! The two control characters are what the separators were made for and
-//! appear in no key or value an integration writes. One encoding across
-//! the column-and-object technologies — parquet, sqlite, sql, postgresql,
-//! mssql, mariadb, aws-s3, azure-blob, google-cloud-storage — means a
-//! Parquet file, a `SQLite` row and an S3 object read the same to an
-//! operator.
+//! column for the metadata, the pairs travel in it like this: record
+//! separator between pairs, unit separator between key and value. The two
+//! control characters are what the separators were made for and appear in
+//! no key or value an integration writes. One encoding across the column
+//! technologies — parquet, sqlite, sql, postgresql, mssql, mariadb — means
+//! a Parquet file and a `SQLite` row read the same to an operator.
 //!
-//! The file archive is the one exception, on purpose: its `.meta` sidecar
-//! is TOML an operator reads in any editor, and it carries the original
-//! `data_type` and `identifier` beside the pairs because the file name
-//! they became is sanitized and cannot give them back. That sidecar lives
-//! with the file technology, not here.
+//! A store whose items sit under names — file, aws-s3, azure-blob,
+//! google-cloud-storage — keeps the metadata as an object of its own
+//! instead: the TOML sidecar (`crate::sidecar`), which an operator reads in
+//! any editor and which carries the original `data_type` and `identifier`
+//! the key may not give back, and the checksum its claim is judged by
+//! (`crate::named`).
 
 /// Between pairs.
 pub const PAIR: char = '\u{1e}';
