@@ -28,7 +28,7 @@
 //! and it is refused; the receipt's checksum, the metadata's and the
 //! SHA-256 of the bytes read must agree.
 
-use crate::checksum::sha256_hex;
+use crate::checksum::{self, sha256_hex};
 use crate::sidecar::Sidecar;
 use crate::{ArchiveError, ArchiveItem, ArchiveReceipt, layout, timestamp};
 
@@ -189,17 +189,7 @@ pub fn restore(
     let meta = layout::meta_of(prefix, &key)?;
     let sidecar = sidecar_at(store, &meta)?.ok_or_else(not_completed)?;
     let bytes = store.read(&key)?.ok_or_else(not_completed)?;
-    let actual = sha256_hex(&bytes);
-    let receipted = receipt.checksum.as_deref().unwrap_or(&actual);
-    if actual != sidecar.checksum || actual != receipted {
-        return Err(ArchiveError {
-            message: format!(
-                "checksum mismatch at {}: the receipt says {receipted}, the metadata {}, \
-                 the bytes {actual}",
-                receipt.location, sidecar.checksum
-            ),
-        });
-    }
+    checksum::verify(receipt, Some(&sidecar.checksum), &bytes)?;
     Ok(ArchiveItem {
         data_type: sidecar.data_type,
         identifier: sidecar.identifier,

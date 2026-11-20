@@ -7,7 +7,7 @@ version = "0.1.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/IlleNilsson/xmip-core-archive"
-description = "Archival contracts for retained Xmip data, and what every archive technology shares: the item, the receipt, the metadata text, the timestamp, the layout and the checksum."
+description = "Archival contracts for retained Xmip data, and what every archive technology shares: the item, the receipt, the metadata text, the timestamp, the layout, the file created whole, the directory a receipt names and the checksum."
 
 [lib]
 # A host crate: the technologies mount beside this source (ADR-0049).
@@ -24,15 +24,29 @@ sql = { package = "xmip-core-library-sql", git = "https://github.com/IlleNilsson
 # The one clock (`xcore::Clock`), which an item's archived time is read
 # from; a technology takes the moment as a parameter.
 xcore = { package = "xmip-core", git = "https://github.com/IlleNilsson/xmip-core", branch = "main" }
-# The directory synced after an item is linked to its name (`whole.rs`),
-# written once for the estate.
+# The file held by its process while it is written, removed only where no
+# process holds it, and the directory synced after it is linked to its
+# name (`whole.rs`), written once for the estate.
 file = { package = "xmip-core-library-file", git = "https://github.com/IlleNilsson/xmip-core-library-file", branch = "main" }
+# A filesystem path as the path of a URI, written once for the estate: the
+# `file://` receipt of an archive on a file system (`directory.rs`).
+net = { package = "xmip-core-library-net", git = "https://github.com/IlleNilsson/xmip-core-library-net", branch = "main" }
 
 [features]
 # The item and the timeout a technology's tests archive with, from the
 # capability's `fixture` module. A technology enables it from its
 # dev-dependencies only, so the fixtures are never in a production build.
 test-support = []
+
+# The module's timing program (doc/governance/rust-style.md section 5c): a
+# plain cargo test leaves it out, and the landing runs it after every other
+# test here, alone, one test at a time, so what it measures is Xmip's work.
+# It waits for a sweep through `whole::swept`, under `test-support`.
+[[test]]
+name = "measured"
+path = "tests/measured/main.rs"
+test = false
+required-features = ["test-support"]
 
 [dev-dependencies]
 # A test's own temporary folder (`file::temporary`); for the tests only.
