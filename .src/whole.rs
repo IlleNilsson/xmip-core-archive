@@ -91,27 +91,8 @@ fn opened(path: &Path) -> io::Result<File> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use file::temporary::Folder;
     use std::io::Write;
-    use std::path::PathBuf;
-
-    /// A directory of its own under the temporary directory, removed when
-    /// the test ends, also when it fails.
-    struct Scratch(PathBuf);
-
-    impl Scratch {
-        fn new(name: &str) -> Self {
-            let dir =
-                std::env::temp_dir().join(format!("xmip-whole-{name}-{}", std::process::id()));
-            fs::remove_dir_all(&dir).ok();
-            Self(dir)
-        }
-    }
-
-    impl Drop for Scratch {
-        fn drop(&mut self) {
-            fs::remove_dir_all(&self.0).ok();
-        }
-    }
 
     fn names(dir: &Path) -> Vec<String> {
         let mut names: Vec<String> = fs::read_dir(dir)
@@ -130,25 +111,25 @@ mod tests {
 
     #[test]
     fn a_file_is_created_whole_in_a_directory_made_for_it_and_never_written_over() {
-        let dir = Scratch::new("never-over");
-        let path = dir.0.join("json").join("order");
+        let dir = Folder::new("archive-whole-never-over");
+        let path = dir.join("json").join("order");
         let created = create(&path, |file| file.write_all(b"first")).expect("created");
         assert_eq!(created, Created::Created);
         let again = create(&path, |file| file.write_all(b"second")).expect("taken");
         assert_eq!(again, Created::Exists);
         assert_eq!(fs::read(&path).expect("the file"), b"first");
-        assert_eq!(names(&dir.0.join("json")), ["order"], "nothing beside it");
+        assert_eq!(names(&dir.join("json")), ["order"], "nothing beside it");
     }
 
     #[test]
     fn a_write_failing_half_way_leaves_nothing_at_the_name() {
-        let dir = Scratch::new("half-way");
-        let path = dir.0.join("order");
+        let dir = Folder::new("archive-whole-half-way");
+        let path = dir.join("order");
         let failed = create(&path, |file| {
             file.write_all(b"fir")?;
             Err(io::Error::other("the disk is full"))
         });
         assert!(failed.is_err());
-        assert!(names(&dir.0).is_empty(), "{:?}", names(&dir.0));
+        assert!(names(&dir).is_empty(), "{:?}", names(&dir));
     }
 }
