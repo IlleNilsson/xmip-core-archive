@@ -15,13 +15,16 @@
 //! `sidecar` the TOML a name-keyed store keeps beside the bytes,
 //! `timestamp` is when an item was archived, `layout` is where a name-keyed
 //! store puts it, `named` is the one rule of such a store — created, never
-//! written over — and `whole` a file created so on a file system,
-//! `checksum` is what a receipt carries, `sql` is the one
+//! written over — and `whole` a file created so on a file system, a file a
+//! dead process left there removed, `directory` the `file://` receipt of
+//! every archive on a file system, `checksum` is what a receipt carries
+//! and its check, `sql` is the one
 //! archive in a SQL server's table — `SqlArchive`, given each server's
 //! `Database` — `location` reads a receipt back, and `fixture`, in tests
 //! only, is the item every technology's test archives.
 
 pub mod checksum;
+pub mod directory;
 #[cfg(any(test, feature = "test-support"))]
 pub mod fixture;
 pub mod layout;

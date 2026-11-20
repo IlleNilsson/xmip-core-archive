@@ -9,7 +9,8 @@
 //! carried a parser of one of these until 2026-09-14; the parsers moved up
 //! to the capability (ADR-0044), and each technology hands over its scheme.
 //! A shape only one technology has — a blob under an account and a
-//! container, a file under a root — stays with that technology.
+//! container — stays with that technology; a file under a root, which the
+//! file and Parquet archives share since 2026-11-20, is `crate::directory`.
 
 use crate::ArchiveError;
 
