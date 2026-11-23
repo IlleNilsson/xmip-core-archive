@@ -139,7 +139,7 @@ mod tests {
             checksum: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
                 .to_string(),
             metadata: vec![
-                ("source".to_string(), "essentials".to_string()),
+                ("source".to_string(), "system-test".to_string()),
                 (
                     "note with space".to_string(),
                     "two\nlines\ttabbed".to_string(),
@@ -166,7 +166,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("\n[metadata]\n\"source\" = \"essentials\"\n"),
+            text.contains("\n[metadata]\n\"source\" = \"system-test\"\n"),
             "{text}"
         );
         assert!(text.contains(r#""two\nlines\ttabbed""#), "{text}");
