@@ -14,20 +14,20 @@ path = ".src/lib.rs"
 # The estate's encoding primitives: the civil calendar a receipt's time is
 # written from, and the one checksum a receipt carries, SHA-256 in hex,
 # here rather than in each technology (ADR-0044).
-codec = { package = "xmip-core-library-codec", git = "https://github.com/IlleNilsson/xmip-core-library-codec", branch = "main" }
+codec = { workspace = true }
 # SQL: the dialect a SQL technology names, which writes the row's INSERT
 # and SELECT and reads its bytes back (`sql.rs`).
-sql = { package = "xmip-core-library-sql", git = "https://github.com/IlleNilsson/xmip-core-library-sql", branch = "main" }
+sql = { workspace = true }
 # The one clock (`xcore::Clock`), which an item's archived time is read
 # from; a technology takes the moment as a parameter.
-xcore = { package = "xmip-core", git = "https://github.com/IlleNilsson/xmip-core", branch = "main" }
+xcore = { workspace = true }
 # The file held by its process while it is written, removed only where no
 # process holds it, and the directory synced after it is linked to its
 # name (`whole.rs`), written once for the estate.
-file = { package = "xmip-core-library-file", git = "https://github.com/IlleNilsson/xmip-core-library-file", branch = "main" }
+file = { workspace = true }
 # A filesystem path as the path of a URI, written once for the estate: the
 # `file://` receipt of an archive on a file system (`directory.rs`).
-net = { package = "xmip-core-library-net", git = "https://github.com/IlleNilsson/xmip-core-library-net", branch = "main" }
+net = { workspace = true }
 
 [features]
 # The item and the timeout a technology's tests archive with, from the
@@ -47,7 +47,7 @@ required-features = ["test-support"]
 
 [dev-dependencies]
 # A test's own temporary folder (`file::temporary`); for the tests only.
-file = { package = "xmip-core-library-file", git = "https://github.com/IlleNilsson/xmip-core-library-file", branch = "main", features = ["test-support"] }
+file = { workspace = true, features = ["test-support"] }
 
 [lints]
 workspace = true
